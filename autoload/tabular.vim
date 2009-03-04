@@ -139,7 +139,7 @@ endfunction
 function! s:FilterString(lines, commandstring)
   exe 'let rv = ' . a:commandstring
 
-  if type(rv) == type(a:lines)
+  if type(rv) == type(a:lines) && rv isnot a:lines
     call filter(a:lines, 0)
     call extend(a:lines, rv)
   endif
