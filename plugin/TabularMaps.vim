@@ -1,7 +1,15 @@
+let s:save_cpo = &cpo
+set cpo&vim
+
 AddTabularPattern!  assignment      /[|&+*/%<>=!~-]\@<!\([<>!=]=\|=\~\)\@![|&+*/%<>=!~-]*=/l1r1
 AddTabularPattern!  two_spaces      /  /l0
 
 AddTabularPipeline! multiple_spaces /  / map(a:lines, "substitute(v:val, '   *', '  ', 'g')") | tabular#TabularizeStrings(a:lines, '  ', 'l0')
+
+AddTabularPipeline! argument_list   /(.*)/ map(a:lines, 'substitute(v:val, ''\s*\([(,)]\)\s*'', ''\1'', ''g'')')
+                                       \ | tabular#TabularizeStrings(a:lines, '[(,)]', 'l0')
+                                       \ | map(a:lines, 'substitute(v:val, ''\(\s*\),'', '',\1 '', "g")')
+                                       \ | map(a:lines, 'substitute(v:val, ''\s*)'', ")", "g")')
 
 function! SplitCDeclarations(lines)
   let rv = []
@@ -31,3 +39,6 @@ AddTabularPattern! cpp_io /<<\|>>/l1
 AddTabularPattern! pascal_assign /:=/l1
 
 AddTabularPattern! trailing_c_comments /\/\*\|\*\/\|\/\//l1
+
+let &cpo = s:save_cpo
+unlet s:save_cpo
