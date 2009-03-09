@@ -1,3 +1,7 @@
+if !exists(':Tabularize')
+  finish " Tabular.vim wasn't loaded
+endif
+
 let s:save_cpo = &cpo
 set cpo&vim
 
