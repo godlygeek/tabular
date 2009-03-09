@@ -184,7 +184,9 @@ function! tabular#TabularizeStrings(strings, delim, ...)
   "     intentionally
   "   - Don't strip leading spaces from the first element; we like indenting.
   for line in lines
-    let line[0] = s:StripTrailingSpaces(line[0])
+    if line[0] !~ '^\s*$'
+      let line[0] = s:StripTrailingSpaces(line[0])
+    endif
     if len(line) >= 3
       for i in range(2, len(line)-1, 2)
         let line[i] = s:StripLeadingSpaces(s:StripTrailingSpaces(line[i]))
