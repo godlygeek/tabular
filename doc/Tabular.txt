@@ -18,8 +18,9 @@
 
                                                                  *tabular-toc*
 
-1. Description                                         |tabular-intro|
-2. Walkthrough                                         |tabular-walkthrough|
+1. Description                                           |tabular-intro|
+2. Walkthrough                                           |tabular-walkthrough|
+3. Extending                                             |tabular-extending|
 
 The functionality mentioned here is a plugin, see |add-plugin|.
 You can avoid loading this plugin by setting the "Tabular_loaded" global
@@ -41,9 +42,11 @@ interface.  It's still a work in progress, and criticisms are welcome.
 2. Walkthrough                                           *tabular-walkthrough*
 
 Tabular's commands are based largely on regular expressions.  The basic
-technique used by Tabular is taking some regex that matches delimiters,
-splitting the input lines at those delimiters, padding the non-delimiter parts
-of the lines with spaces, and joining things back together again.
+technique used by Tabular is taking some regex to match field delimiters,
+splitting the input lines at those delimiters, trimming unnecessary spaces
+from the non-delimiter parts, padding the non-delimiter parts of the lines
+with spaces to make them the same length, and joining things back together
+again.
 
 For instance, consider starting with the following lines:
 >
@@ -59,9 +62,22 @@ command:
     Some short phrase         , some other phrase
     A much longer phrase here , and another long phrase
 <
-So, now the commas line up.  Splitting the lines on commas, Tabular realized
-that 'Some short phrase' would need to be padded with spaces to match the
-length of 'A much longer phrase here', and it did that before joining the
+I encourage you to try copying those lines to another buffer and trying to
+call :Tabularize.  You'll want to take notice of two things quickly: First,
+instead of requiring a range, Tabularize tries to figure out what you want to
+happen.  Since it knows that you want to act on lines matching a comma, it
+will look upwards and downwards for lines around the current line that match a
+comma, and consider all contiguous lines matching the pattern to be the range
+to be acted upon.  You can always override this by specifying a range, though.
+
+The second thing you should notice is that you'll almost certainly be able to
+abbreviate :Tabularize to :Tab - using this form in mappings and scripts is
+discouraged as it will make conflicts with other scripts more likely, but for
+interactive use it's a nice timesaver.
+
+So, anyway, now the commas line up.  Splitting the lines on commas, Tabular
+realized that 'Some short phrase' would need to be padded with spaces to match
+the length of 'A much longer phrase here', and it did that before joining the
 lines back together.  You'll also notice that, in addition to the spaces
 inserting for padding, extra spaces were inserted between fields.  That's
 because by default, Tabular prints things left-aligned with one space between
@@ -82,15 +98,14 @@ be printed with the next format specifier in the list; when they all have been
 used the first will be used again, and so on.  So, the last command right
 aligned every field, then inserted 0 spaces of padding before the next field.
 What if we wanted to right align the text before the comma, and left align the
-space after the comma?  The command would look like this:
+text after the comma?  The command would look like this:
 >
   :Tabularize /,/r1c1l0
 
             Some short phrase , some other phrase
     A much longer phrase here , and another long phrase
 <
-
-That command would be read as "Align the following text, splitting fields on
+That command would be read as "Align the matching text, splitting fields on
 commas.  Print everything before the first comma right aligned, then 1 space,
 then the comma center aligned, then 1 space, then everything after the comma
 left aligned."  Notice that the alignment of the field the comma is in is
@@ -129,23 +144,79 @@ aligned:
       a,b
       a,b,c
 <
-Here, we used a vim regex that would only match the first comma on the line.
+Here, we used a Vim regex that would only match the first comma on the line.
 It matches the beginning of the line, followed by all the non-comma characters
 up to the first comma, and then forgets about what it matched so far and
 pretends that the match starts exactly at the comma.
 
 But, now that this command does exactly what we want it to, it's become pretty
-unwieldly.  It would be unpleasant to need to type that more than once or
+unwieldy.  It would be unpleasant to need to type that more than once or
 twice.  The solution is to assign a name to it.
 >
-  :AddTabularPattern my_commas /^[^,]*\zs,/r0c0l0
+  :AddTabularPattern first_comma /^[^,]*\zs,/r0c0l0
 <
-Now, typing ":Tabularize my_commas" will do the same thing as typing the whole
-pattern out each time.  Of course this is more useful if you store the name in
-a file to be used later.
+Now, typing ":Tabularize first_comma" will do the same thing as typing the
+whole pattern out each time.  Of course this is more useful if you store the
+name in a file to be used later.
 
-NOTE: Documentation on how to do that will follow; it needs to go in an
-      after/plugin/ dir to be loaded after Tabular.vim
+NOTE: In order to make these new commands available every time vim starts,
+you'll need to put those new commands into a .vim file in a plugin directory
+somewhere in your 'runtimepath'.  In order to make sure that Tabular.vim has
+already been loaded before your file tries to use :AddTabularPattern or
+:AddTabularPipeline, the new file should be installed in an after/plugin
+directory in 'runtimepath'.  In general, it will be safe to find out where the
+TabularMaps.vim plugin was installed, and place other files extending
+Tabular.vim in the same directory as TabularMaps.vim.  For more information,
+and some suggested best practices, check out the |tabular-extending| section.
+
+Lastly, we'll approach the case where tabular cannot achieve your desired goal
+just by splitting lines appart, trimming whitespace, padding with whitespace,
+and rejoining the lines.  As an example, consider the multiple_spaces command
+from TabularMaps.vim.  The goal is to split using two or more spaces as a
+field delimiter, and join fields back together, properly lined up, with only
+two spaces between the end of each field and the beginning of the next.
+Unfortunately, Tabular can't do this with only the commands we know so far:
+>
+  :Tabularize /  /
+<
+The above function won't work, because it will consider "a    b" as 5 fields
+delimited by two pairs of 2 spaces ( 'a', '  ', '', '  ', 'b' ) instead of as
+3 fields delimited by one set of 2 or more spaces ( 'a', '    ', 'b' ).
+>
+  :Tabularize /  \+/
+<
+The above function won't work either, because it will leave the delimiter as 4
+spaces when used against "a    b", meaning that we would fail at our goal of
+collapsing everything down to two spaces between fields.  So, we need a new
+command to get around this:
+>
+  :AddTabularPipeline multiple_spaces / \{2,}/
+    \ map(a:lines, "substitute(v:val, ' \{2,}', '  ', 'g')")
+    \   | tabular#TabularizeStrings(a:lines, '  ', 'l0')
+<
+Yeah.  I know it looks complicated.  Bear with me.  I probably will try to add
+in some shortcuts for this syntax, but this verbose will be guaranteed to
+always work.
+
+You should already recognize the name being assigned.  The next thing to
+happen is / \{2,}/ which is a pattern specifying which lines should
+automatically be included in the range when no range is given.  Without this,
+there would be no pattern to use for extending the range.  Everything after
+that is a | separated list of expressions to be evaluated.  In the context in
+which they will be evaluated, a:lines will be set to a List of Strings
+containing the text of the lines being filtered as they procede through the
+pipeline you've set up.  The \ at the start of the lines are just vim's line
+continuation marker; you needn't worry much about them.  So, the first
+expression in the pipeline transforms each line by replacing every instance of
+2 or more spaces with exactly two spaces.  The second command in the pipeline
+performs the equivalent of ":Tabularize /  /l0"; the only difference is that
+it is operating on a List of Strings rather than text in the buffer.  At the
+end of the pipeline, the Strings in the modified a:lines (or the return value
+of the last expression in the pipeline, if it returns a List) will replace the
+chosen range.
+
+==============================================================================
+3. Extending                                               *tabular-extending*
 
 ==============================================================================
 vim:tw=78:fo=tcq2:isk=!-~,^*,^\|,^\":ts=8:ft=help:norl:
