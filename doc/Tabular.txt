@@ -1,4 +1,3 @@
-
 *Tabular.txt*   Configurable, flexible, intuitive text aligning
 
                                                        *tabular* *tabular.vim*
@@ -20,7 +19,7 @@
 
 1. Description                                           |tabular-intro|
 2. Walkthrough                                           |tabular-walkthrough|
-3. Extending                                             |tabular-extending|
+3. Scripting                                             |tabular-scripting|
 
 The functionality mentioned here is a plugin, see |add-plugin|.
 You can avoid loading this plugin by setting the "Tabular_loaded" global
@@ -167,7 +166,7 @@ already been loaded before your file tries to use :AddTabularPattern or
 directory in 'runtimepath'.  In general, it will be safe to find out where the
 TabularMaps.vim plugin was installed, and place other files extending
 Tabular.vim in the same directory as TabularMaps.vim.  For more information,
-and some suggested best practices, check out the |tabular-extending| section.
+and some suggested best practices, check out the |tabular-scripting| section.
 
 Lastly, we'll approach the case where tabular cannot achieve your desired goal
 just by splitting lines appart, trimming whitespace, padding with whitespace,
@@ -216,7 +215,44 @@ of the last expression in the pipeline, if it returns a List) will replace the
 chosen range.
 
 ==============================================================================
-3. Extending                                               *tabular-extending*
+3. Extending                                               *tabular-scripting*
 
+As mentioned above, the most important consideration when extending Tabular
+with new maps or commands is that your plugin must be loaded after Tabular.vim
+has finished loading, and only if Tabular.vim has loaded successfully.  The
+easiest approach to making sure it loads after Tabular.vim is simply putting
+the new file (we'll call it "tabular_extra.vim" as an example) into an
+"after/plugin/" directory in 'runtimepath', for instance:
+>
+  ~/.vim/after/plugin/tabular_extra.vim
+<
+The default set of mappings, found in "TabularMaps.vim", is installed in
+the after/plugin/ subdirectory of whatever directory Tabular was installed to.
+
+The other important consideration is making sure that your commands are only
+called if Tabular.vim was actually loaded.  The easiest way to do this is by
+checking for the existence of the :Tabularize command at the start of your
+plugin.  A short example plugin would look like this:
+>
+  " after/plugin/my_tabular_commands.vim
+  " Provides extra :Tabularize commands
+
+  if !exists(':Tabularize')
+    finish " Give up here; the Tabular plugin musn't have been loaded
+  endif
+
+  " Make line wrapping possible by resetting the 'cpo' option, first saving it
+  let s:save_cpo = &cpo
+  set cpo&vim
+
+  AddTabularPattern! asterisk /*/l1
+
+  AddTabularPipeline! remove_leading_spaces /^ /
+                  \ map(a:lines, "substitute(v:val, '^ *', '', '')")
+
+  " Restore the saved value of 'cpo'
+  let &cpo = s:save_cpo
+  unlet s:save_cpo
+<
 ==============================================================================
 vim:tw=78:fo=tcq2:isk=!-~,^*,^\|,^\":ts=8:ft=help:norl:
