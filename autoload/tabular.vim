@@ -184,9 +184,7 @@ function! tabular#TabularizeStrings(strings, delim, ...)
   "     intentionally
   "   - Don't strip leading spaces from the first element; we like indenting.
   for line in lines
-    if line[0] =~ '^\s*$'
-      let line[0] = line[0][format[0][1:-1] : -1]
-    else
+    if line[0] !~ '^\s*$'
       let line[0] = s:StripTrailingSpaces(line[0])
     endif
     if len(line) >= 3
@@ -208,6 +206,8 @@ function! tabular#TabularizeStrings(strings, delim, ...)
     endfor
   endfor
 
+  let lead_blank = empty(filter(copy(lines), 'v:val[0] =~ "\\S"'))
+
   " Concatenate the fields, according to the format pattern.
   for idx in range(len(lines))
     let line = lines[idx]
@@ -223,7 +223,7 @@ function! tabular#TabularizeStrings(strings, delim, ...)
         let field = s:Center(line[i], maxes[i])
       endif
 
-      let line[i] = field . repeat(" ", pad)
+      let line[i] = field . (lead_blank && i == 0 ? '' : repeat(" ", pad))
     endfor
 
     let lines[idx] = s:StripTrailingSpaces(join(line, ''))
