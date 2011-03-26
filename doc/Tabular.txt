@@ -62,19 +62,20 @@ command:
     A much longer phrase here , and another long phrase
 <
 I encourage you to try copying those lines to another buffer and trying to
-call :Tabularize. You can reuse your previous pattern simply by calling
-:Tabularize without specifying a new one. You'll want to take notice of two
-things quickly: First, instead of requiring a range, Tabularize tries to
-figure out what you want to happen.  Since it knows that you want to act on
-lines matching a comma, it will look upwards and downwards for lines around
-the current line that match a comma, and consider all contiguous lines
-matching the pattern to be the range to be acted upon.  You can always
-override this by specifying a range, though.
+call :Tabularize.  You'll want to take notice of two things quickly: First,
+instead of requiring a range, Tabularize tries to figure out what you want to
+happen.  Since it knows that you want to act on lines matching a comma, it
+will look upwards and downwards for lines around the current line that match a
+comma, and consider all contiguous lines matching the pattern to be the range
+to be acted upon.  You can always override this by specifying a range, though.
 
 The second thing you should notice is that you'll almost certainly be able to
 abbreviate :Tabularize to :Tab - using this form in mappings and scripts is
 discouraged as it will make conflicts with other scripts more likely, but for
 interactive use it's a nice timesaver.
+
+Another convenience feature is that, by running :Tabularize without specifying
+a new pattern, you can easily reuse the pattern from the last time you ran it.
 
 So, anyway, now the commas line up.  Splitting the lines on commas, Tabular
 realized that 'Some short phrase' would need to be padded with spaces to match
