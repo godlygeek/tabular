@@ -276,6 +276,50 @@ function! tabular#PipeRange(includepat, ...) range
   call s:SetLines(top, bot - top + 1, lines)
 endfunction
 
+function! s:SplitDelimTest(string, delim, expected)
+  let result = s:SplitDelim(a:string, a:delim)
+
+  if result !=# a:expected
+    echomsg 'Test failed!'
+    echomsg '  string=' . string(a:string) . '  delim=' . string(a:delim)
+    echomsg '  Returned=' . string(result)
+    echomsg '  Expected=' . string(a:expected)
+  endif
+endfunction
+
+function! tabular#SplitDelimUnitTest()
+  let assignment = '[|&+*/%<>=!~-]\@<!\([<>!=]=\|=\~\)\@![|&+*/%<>=!~-]*='
+  let two_spaces = '  '
+  let ternary_operator = '^.\{-}\zs?\|:'
+  let cpp_io = '<<\|>>'
+  let pascal_assign = ':='
+  let trailing_c_comments = '\/\*\|\*\/\|\/\/'
+
+  call s:SplitDelimTest('a+=b',    assignment, ['a', '+=', 'b'])
+  call s:SplitDelimTest('a-=b',    assignment, ['a', '-=', 'b'])
+  call s:SplitDelimTest('a!=b',    assignment, ['a!=b'])
+  call s:SplitDelimTest('a==b',    assignment, ['a==b'])
+  call s:SplitDelimTest('a&=b',    assignment, ['a', '&=', 'b'])
+  call s:SplitDelimTest('a|=b',    assignment, ['a', '|=', 'b'])
+  call s:SplitDelimTest('a=b=c',   assignment, ['a', '=', 'b', '=', 'c'])
+
+  call s:SplitDelimTest('a  b  c', two_spaces, ['a', '  ', 'b', '  ', 'c'])
+  call s:SplitDelimTest('a b   c', two_spaces, ['a b', '  ', ' c'])
+  call s:SplitDelimTest('ab    c', two_spaces, ['ab', '  ', '', '  ', 'c'])
+
+  call s:SplitDelimTest('a?b:c',   ternary_operator, ['a', '?', 'b', ':', 'c'])
+
+  call s:SplitDelimTest('a<<b<<c', cpp_io, ['a', '<<', 'b', '<<', 'c'])
+
+  call s:SplitDelimTest('a:=b=c',  pascal_assign, ['a', ':=', 'b=c'])
+
+  call s:SplitDelimTest('x//foo',  trailing_c_comments, ['x', '//', 'foo'])
+  call s:SplitDelimTest('x/*foo*/',trailing_c_comments, ['x', '/*', 'foo', '*/', ''])
+
+  call s:SplitDelimTest('#ab#cd#ef', '[^#]*', ['#', 'ab', '#', 'cd', '#', 'ef', ''])
+  call s:SplitDelimTest('#ab#cd#ef', '#\zs',  ['#', '', 'ab#', '', 'cd#', '', 'ef'])
+endfunction
+
 " Stupid vimscript crap, part 2                                           {{{1
 let &cpo = s:savecpo
 unlet s:savecpo
