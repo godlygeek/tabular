@@ -70,38 +70,38 @@ endfunction
 function! s:SplitDelim(string, delim)
   let rv = []
   let beg = 0
-  let idx = 0
 
   let len = len(a:string)
+  let searchoff = 0
 
   while 1
-    let mid = match(a:string, a:delim, beg, 1)
+    let mid = match(a:string, a:delim, beg + searchoff, 1)
     if mid == -1 || mid == len
       break
     endif
 
-    let matchstr = matchstr(a:string, a:delim, beg, 1)
+    let matchstr = matchstr(a:string, a:delim, beg + searchoff, 1)
     let length = strlen(matchstr)
 
-    if beg < mid
-      let rv += [ a:string[beg : mid-1] ]
-    else
-      let rv += [ "" ]
+    if length == 0 && beg == mid
+      " Zero-length match for a zero-length delimiter - advance past it
+      let searchoff += 1
+      continue
     endif
-
-    let beg = mid + length
-    let idx = beg
 
     if beg == mid
-      " Empty match, advance "beg" by one to avoid infinite loop
       let rv += [ "" ]
-      let beg += 1
-    else " beg > mid
-      let rv += [ a:string[mid : beg-1] ]
+    else
+      let rv += [ a:string[beg : mid-1] ]
     endif
+
+    let rv += [ matchstr ]
+
+    let beg = mid + length
+    let searchoff = 0
   endwhile
 
-  let rv += [ strpart(a:string, idx) ]
+  let rv += [ strpart(a:string, beg) ]
 
   return rv
 endfunction
