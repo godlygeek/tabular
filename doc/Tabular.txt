@@ -72,7 +72,9 @@ to be acted upon.  You can always override this by specifying a range, though.
 The second thing you should notice is that you'll almost certainly be able to
 abbreviate :Tabularize to :Tab - using this form in mappings and scripts is
 discouraged as it will make conflicts with other scripts more likely, but for
-interactive use it's a nice timesaver.
+interactive use it's a nice timesaver.  Another convenience feature is that
+running :Tabularize without providing a new pattern will cause it to reuse the
+last pattern it was called with.
 
 So, anyway, now the commas line up.  Splitting the lines on commas, Tabular
 realized that 'Some short phrase' would need to be padded with spaces to match

@@ -235,14 +235,27 @@ endfunction
 "
 " Align text, either using the given pattern, or the command associated with
 " the given name.
-com! -nargs=+ -range -complete=customlist,<SID>CompleteTabularizeCommand
+com! -nargs=* -range -complete=customlist,<SID>CompleteTabularizeCommand
    \ Tabularize <line1>,<line2>call Tabularize(<q-args>)
 
 function! Tabularize(command) range
+  if empty(a:command)
+    if !exists("s:last_tabularize_command")
+      echohl ErrorMsg
+      echomsg "Tabularize hasn't been called yet; no pattern/command to reuse!"
+      echohl None
+      return
+    endif
+  else
+    let s:last_tabularize_command = a:command
+  endif
+
+  let command = s:last_tabularize_command
+
   let range = a:firstline . ',' . a:lastline
 
   try
-    let [ pattern, format ] = s:ParsePattern(a:command)
+    let [ pattern, format ] = s:ParsePattern(command)
 
     if !empty(pattern)
       let cmd  = "tabular#TabularizeStrings(a:lines, " . string(pattern)
@@ -255,12 +268,12 @@ function! Tabularize(command) range
 
       exe range . 'call tabular#PipeRange(pattern, cmd)'
     else
-      if exists('b:TabularCommands') && has_key(b:TabularCommands, a:command)
-        let command = b:TabularCommands[a:command]
-      elseif has_key(s:TabularCommands, a:command)
-        let command = s:TabularCommands[a:command]
+      if exists('b:TabularCommands') && has_key(b:TabularCommands, command)
+        let command = b:TabularCommands[command]
+      elseif has_key(s:TabularCommands, command)
+        let command = s:TabularCommands[command]
       else
-        throw "Unrecognized command " . string(a:command)
+        throw "Unrecognized command " . string(command)
       endif
 
       exe range . command
