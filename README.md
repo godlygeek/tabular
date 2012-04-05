@@ -39,3 +39,7 @@ then simply copy and paste:
 
 Once help tags have been generated, you can view the manual with
 `:help tabularize`.
+
+Other
+----
+A helpful vimcast can be found [here](http://vimcasts.org/episodes/aligning-text-with-tabular-vim/).
