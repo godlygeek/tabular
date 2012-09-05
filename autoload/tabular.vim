@@ -219,9 +219,7 @@ function! tabular#TabularizeStrings(strings, delim, ...)
   "     intentionally
   "   - Don't strip leading spaces from the first element; we like indenting.
   for line in lines
-    if len(line) == 1 && len(tabular#LineInclusionPattern())
-      " FIXME Does LineInclusionPattern even need to be a pattern?  Can it
-      "       just be a boolean?  That's all I've needed to use it as...
+    if len(line) == 1 && s:do_gtabularize
       continue " Leave non-matching lines unchanged for GTabularize
     endif
 
@@ -238,7 +236,7 @@ function! tabular#TabularizeStrings(strings, delim, ...)
   " Find the max length of each field
   let maxes = []
   for line in lines
-    if len(line) == 1 && len(tabular#LineInclusionPattern())
+    if len(line) == 1 && s:do_gtabularize
       continue " non-matching lines don't affect field widths for GTabularize
     endif
 
@@ -257,7 +255,7 @@ function! tabular#TabularizeStrings(strings, delim, ...)
   for idx in range(len(lines))
     let line = lines[idx]
 
-    if len(line) == 1 && len(tabular#LineInclusionPattern())
+    if len(line) == 1 && s:do_gtabularize
       let lines[idx] = line[0] " GTabularize just ignores non-matching lines
       continue
     endif
@@ -299,65 +297,57 @@ endfunction
 " The remaining arguments must each be a filter to apply to the text.
 " Each filter must either be a String evaluating to a function to be called.
 function! tabular#PipeRange(includepat, ...) range
-  try
-    let top = a:firstline
-    let bot = a:lastline
+  exe a:firstline . ',' . a:lastline
+      \ . 'call tabular#PipeRangeWithOptions(a:includepat, a:000, {})'
+endfunction
 
-    if get(s:, 'tabularize_mode', '') ==# 'GTabularize'
-      " Save the include pattern for future use by TabularizeStrings (and by
-      " any Pipeline that wants to handle it) for GTabularize; it can be
-      " queried later via tabular#LineInclusionPattern
-      let s:line_inclusion_pattern = a:includepat
-    else
-      " In the default mode, apply range extension logic
-      if a:includepat != '' && top == bot
-        if top < 0 || top > line('$') || getline(top) !~ a:includepat
-          return
-        endif
-        while top > 1 && getline(top-1) =~ a:includepat
-          let top -= 1
-        endwhile
-        while bot < line('$') && getline(bot+1) =~ a:includepat
-          let bot += 1
-        endwhile
+" Extended version of tabular#PipeRange, which
+" 1) Takes the list of filters as an explicit list rather than as varargs
+" 2) Supports passing a dictionary of options to control the routine.
+"    Currently, the only supported option is 'mode', which determines whether
+"    to behave as :Tabularize or as :GTabularize
+" This allows me to add new features here without breaking API compatibility
+" in the future.
+function! tabular#PipeRangeWithOptions(includepat, filterlist, options) range
+  let top = a:firstline
+  let bot = a:lastline
+
+  let s:do_gtabularize = (a:options['mode'] ==# 'GTabularize')
+
+  if !s:do_gtabularize
+    " In the default mode, apply range extension logic
+    if a:includepat != '' && top == bot
+      if top < 0 || top > line('$') || getline(top) !~ a:includepat
+        return
       endif
+      while top > 1 && getline(top-1) =~ a:includepat
+        let top -= 1
+      endwhile
+      while bot < line('$') && getline(bot+1) =~ a:includepat
+        let bot += 1
+      endwhile
+    endif
+  endif
+
+  let lines = map(range(top, bot), 'getline(v:val)')
+
+  for filter in a:filterlist
+    if type(filter) != type("")
+      echoerr "PipeRange: Bad filter: " . string(filter)
     endif
 
-    let lines = map(range(top, bot), 'getline(v:val)')
+    call s:FilterString(lines, filter)
 
-    for filter in a:000
-      if type(filter) != type("")
-        echoerr "PipeRange: Bad filter: " . string(filter)
-      endif
+    unlet filter
+  endfor
 
-      call s:FilterString(lines, filter)
-
-      unlet filter
-    endfor
-
-    call s:SetLines(top, bot - top + 1, lines)
-  finally
-    unlet! s:line_inclusion_pattern
-  endtry
+  call s:SetLines(top, bot - top + 1, lines)
 endfunction
 
-" For passing the current mode to autoload/tabular.vim from plugin/Tabular.vim
-" FIXME This could be done more cleanly if the :AddTabularize* functions
-"       didn't hardcode the arguments to the PipeRange call...
-function! tabular#SetTabularizeMode(mode)
-  if len(a:mode)
-    let s:tabularize_mode = a:mode
-  else
-    unlet! s:tabularize_mode
-  endif
-endfunction
-
-" Part of the public interface so interested pipelines can query this.
-" When not in GTabularize mode, an empty string will be returned, otherwise
-" the pattern to be used to determine whether a line should be changed is
-" returned.
-function! tabular#LineInclusionPattern()
-  return get(s:, 'line_inclusion_pattern', '')
+" Part of the public interface so interested pipelines can query this and
+" adjust their behavior appropriately.
+function! tabular#DoGTabularize()
+  return s:do_gtabularize
 endfunction
 
 function! s:SplitDelimTest(string, delim, expected)

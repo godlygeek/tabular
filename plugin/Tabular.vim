@@ -194,9 +194,7 @@ function! AddTabularPattern(command, force)
 
     let command .= ")"
 
-    let commandmap[name] = ":call tabular#PipeRange("
-          \ . string(pattern) . ","
-          \ . string(command) . ")"
+    let commandmap[name] = { 'pattern' : pattern, 'commands' : [ command ] }
   catch
     echohl ErrorMsg
     echomsg "AddTabularPattern: " . v:exception
@@ -249,15 +247,7 @@ function! AddTabularPipeline(command, force)
       throw "Must provide a list of functions!"
     endif
 
-    let cmd = ":call tabular#PipeRange(" . string(pattern)
-
-    for command in commandlist
-      let cmd .= "," . string(command)
-    endfor
-
-    let cmd .= ")"
-
-    let commandmap[name] = cmd
+    let commandmap[name] = { 'pattern' : pattern, 'commands' : commandlist }
   catch
     echohl ErrorMsg
     echomsg "AddTabularPipeline: " . v:exception
@@ -273,7 +263,15 @@ endfunction
 com! -nargs=* -range -complete=customlist,<SID>CompleteTabularizeCommand
    \ Tabularize <line1>,<line2>call Tabularize(<q-args>)
 
-function! Tabularize(command) range
+function! Tabularize(command, ...) range
+  if a:0
+    let options = a:1
+  else
+    let options = {}
+  endif
+
+  let piperange_opt = { 'mode': get(options, 'mode', '') }
+
   if empty(a:command)
     if !exists("s:last_tabularize_command")
       echohl ErrorMsg
@@ -301,17 +299,19 @@ function! Tabularize(command) range
 
       let cmd .= ")"
 
-      exe range . 'call tabular#PipeRange(pattern, cmd)'
+      exe range . 'call tabular#PipeRangeWithOptions(pattern, [ cmd ], '
+                      \ . 'piperange_opt)'
     else
       if exists('b:TabularCommands') && has_key(b:TabularCommands, command)
-        let command = b:TabularCommands[command]
+        let usercmd = b:TabularCommands[command]
       elseif has_key(s:TabularCommands, command)
-        let command = s:TabularCommands[command]
+        let usercmd = s:TabularCommands[command]
       else
         throw "Unrecognized command " . string(command)
       endif
 
-      exe range . command
+      exe range . 'call tabular#PipeRangeWithOptions(usercmd["pattern"], '
+                      \ . 'usercmd["commands"], piperange_opt)'
     endif
   catch
     echohl ErrorMsg
@@ -339,17 +339,8 @@ endfunction
 "   3) If called without a range, it will act on all lines in the buffer (like
 "      :global) rather than only a single line
 com! -nargs=* -range=% -complete=customlist,<SID>CompleteTabularizeCommand
-   \ GTabularize <line1>,<line2>call GTabularize(<q-args>)
-
-function! GTabularize(command) range
-  call tabular#SetTabularizeMode('GTabularize')
-  try
-    exe a:firstline . ',' . a:lastline
-        \ . 'call Tabularize(' . string(a:command) . ')'
-  finally
-    call tabular#SetTabularizeMode('')
-  endtry
-endfunction
+   \ GTabularize <line1>,<line2>
+   \ call Tabularize(<q-args>, { 'mode': 'GTabularize' } )
 
 " Stupid vimscript crap, part 2                                           {{{1
 let &cpo = s:savecpo
