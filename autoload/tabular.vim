@@ -219,6 +219,12 @@ function! tabular#TabularizeStrings(strings, delim, ...)
   "     intentionally
   "   - Don't strip leading spaces from the first element; we like indenting.
   for line in lines
+    if len(line) == 1 && len(tabular#LineInclusionPattern())
+      " FIXME Does LineInclusionPattern even need to be a pattern?  Can it
+      "       just be a boolean?  That's all I've needed to use it as...
+      continue " Leave non-matching lines unchanged for GTabularize
+    endif
+
     if line[0] !~ '^\s*$'
       let line[0] = s:StripTrailingSpaces(line[0])
     endif
@@ -232,6 +238,10 @@ function! tabular#TabularizeStrings(strings, delim, ...)
   " Find the max length of each field
   let maxes = []
   for line in lines
+    if len(line) == 1 && len(tabular#LineInclusionPattern())
+      continue " non-matching lines don't affect field widths for GTabularize
+    endif
+
     for i in range(len(line))
       if i == len(maxes)
         let maxes += [ s:Strlen(line[i]) ]
@@ -246,6 +256,12 @@ function! tabular#TabularizeStrings(strings, delim, ...)
   " Concatenate the fields, according to the format pattern.
   for idx in range(len(lines))
     let line = lines[idx]
+
+    if len(line) == 1 && len(tabular#LineInclusionPattern())
+      let lines[idx] = line[0] " GTabularize just ignores non-matching lines
+      continue
+    endif
+
     for i in range(len(line))
       let how = format[i % len(format)][0]
       let pad = format[i % len(format)][1:-1]
@@ -270,6 +286,8 @@ endfunction
 "   If the function is called with a range containing multiple lines, then
 "     those lines will be used as the range.
 "   If the function is called with no range or with a range of 1 line, then
+"     if GTabularize mode is being used,
+"       the range will not be adjusted
 "     if "includepat" is not specified,
 "       that 1 line will be filtered,
 "     if "includepat" is specified and that line does not match it,
@@ -281,34 +299,65 @@ endfunction
 " The remaining arguments must each be a filter to apply to the text.
 " Each filter must either be a String evaluating to a function to be called.
 function! tabular#PipeRange(includepat, ...) range
-  let top = a:firstline
-  let bot = a:lastline
+  try
+    let top = a:firstline
+    let bot = a:lastline
 
-  if a:includepat != '' && top == bot
-    if top < 0 || top > line('$') || getline(top) !~ a:includepat
-      return
+    if get(s:, 'tabularize_mode', '') ==# 'GTabularize'
+      " Save the include pattern for future use by TabularizeStrings (and by
+      " any Pipeline that wants to handle it) for GTabularize; it can be
+      " queried later via tabular#LineInclusionPattern
+      let s:line_inclusion_pattern = a:includepat
+    else
+      " In the default mode, apply range extension logic
+      if a:includepat != '' && top == bot
+        if top < 0 || top > line('$') || getline(top) !~ a:includepat
+          return
+        endif
+        while top > 1 && getline(top-1) =~ a:includepat
+          let top -= 1
+        endwhile
+        while bot < line('$') && getline(bot+1) =~ a:includepat
+          let bot += 1
+        endwhile
+      endif
     endif
-    while top > 1 && getline(top-1) =~ a:includepat
-      let top -= 1
-    endwhile
-    while bot < line('$') && getline(bot+1) =~ a:includepat
-      let bot += 1
-    endwhile
+
+    let lines = map(range(top, bot), 'getline(v:val)')
+
+    for filter in a:000
+      if type(filter) != type("")
+        echoerr "PipeRange: Bad filter: " . string(filter)
+      endif
+
+      call s:FilterString(lines, filter)
+
+      unlet filter
+    endfor
+
+    call s:SetLines(top, bot - top + 1, lines)
+  finally
+    unlet! s:line_inclusion_pattern
+  endtry
+endfunction
+
+" For passing the current mode to autoload/tabular.vim from plugin/Tabular.vim
+" FIXME This could be done more cleanly if the :AddTabularize* functions
+"       didn't hardcode the arguments to the PipeRange call...
+function! tabular#SetTabularizeMode(mode)
+  if len(a:mode)
+    let s:tabularize_mode = a:mode
+  else
+    unlet! s:tabularize_mode
   endif
+endfunction
 
-  let lines = map(range(top, bot), 'getline(v:val)')
-
-  for filter in a:000
-    if type(filter) != type("")
-      echoerr "PipeRange: Bad filter: " . string(filter)
-    endif
-
-    call s:FilterString(lines, filter)
-
-    unlet filter
-  endfor
-
-  call s:SetLines(top, bot - top + 1, lines)
+" Part of the public interface so interested pipelines can query this.
+" When not in GTabularize mode, an empty string will be returned, otherwise
+" the pattern to be used to determine whether a line should be changed is
+" returned.
+function! tabular#LineInclusionPattern()
+  return get(s:, 'line_inclusion_pattern', '')
 endfunction
 
 function! s:SplitDelimTest(string, delim, expected)

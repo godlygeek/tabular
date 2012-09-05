@@ -321,6 +321,36 @@ function! Tabularize(command) range
   endtry
 endfunction
 
+" GTabularize /pattern[/format]                                           {{{2
+" GTabularize name
+"
+" Align text on only matching lines, either using the given pattern, or the
+" command associated with the given name.  Mnemonically, this is similar to
+" the :global command, which takes some action on all rows matching a pattern
+" in a range.  This command is different from normal :Tabularize in 3 ways:
+"   1) If a line in the range does not match the pattern, it will be left
+"      unchanged, and not in any way affect the outcome of other lines in the
+"      range (at least, normally - but Pipelines can and will still look at
+"      non-matching rows unless they are specifically written to be aware of
+"      tabular#LineInclusionPattern() and handle it appropriately).
+"   2) No automatic range determination - :Tabularize automatically expands
+"      a single-line range (or a call with no range) to include all adjacent
+"      matching lines.  That behavior does not make sense for this command.
+"   3) If called without a range, it will act on all lines in the buffer (like
+"      :global) rather than only a single line
+com! -nargs=* -range=% -complete=customlist,<SID>CompleteTabularizeCommand
+   \ GTabularize <line1>,<line2>call GTabularize(<q-args>)
+
+function! GTabularize(command) range
+  call tabular#SetTabularizeMode('GTabularize')
+  try
+    exe a:firstline . ',' . a:lastline
+        \ . 'call Tabularize(' . string(a:command) . ')'
+  finally
+    call tabular#SetTabularizeMode('')
+  endtry
+endfunction
+
 " Stupid vimscript crap, part 2                                           {{{1
 let &cpo = s:savecpo
 unlet s:savecpo
