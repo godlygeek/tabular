@@ -264,13 +264,10 @@ com! -nargs=* -range -complete=customlist,<SID>CompleteTabularizeCommand
    \ Tabularize <line1>,<line2>call Tabularize(<q-args>)
 
 function! Tabularize(command, ...) range
+  let piperange_opt = {}
   if a:0
-    let options = a:1
-  else
-    let options = {}
+    let piperange_opt = a:1
   endif
-
-  let piperange_opt = { 'mode': get(options, 'mode', '') }
 
   if empty(a:command)
     if !exists("s:last_tabularize_command")

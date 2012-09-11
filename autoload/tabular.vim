@@ -256,7 +256,7 @@ function! tabular#TabularizeStrings(strings, delim, ...)
     let line = lines[idx]
 
     if len(line) == 1 && s:do_gtabularize
-      let lines[idx] = line[0] " GTabularize just ignores non-matching lines
+      let lines[idx] = line[0] " GTabularize doesn't change non-matching lines
       continue
     endif
 
@@ -312,7 +312,7 @@ function! tabular#PipeRangeWithOptions(includepat, filterlist, options) range
   let top = a:firstline
   let bot = a:lastline
 
-  let s:do_gtabularize = (a:options['mode'] ==# 'GTabularize')
+  let s:do_gtabularize = (get(a:options, 'mode', '') ==# 'GTabularize')
 
   if !s:do_gtabularize
     " In the default mode, apply range extension logic
