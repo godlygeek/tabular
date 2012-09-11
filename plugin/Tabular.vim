@@ -329,7 +329,7 @@ endfunction
 "      unchanged, and not in any way affect the outcome of other lines in the
 "      range (at least, normally - but Pipelines can and will still look at
 "      non-matching rows unless they are specifically written to be aware of
-"      tabular#LineInclusionPattern() and handle it appropriately).
+"      tabular#DoGTabularize() and handle it appropriately).
 "   2) No automatic range determination - :Tabularize automatically expands
 "      a single-line range (or a call with no range) to include all adjacent
 "      matching lines.  That behavior does not make sense for this command.
