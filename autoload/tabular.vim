@@ -55,7 +55,7 @@ function! s:Strlen(string)
       let rv += &ts - i
       let i = 0
     else
-      let rv += 1
+      let rv += strdisplaywidth(char) " need vim73
       let i = (i + 1) % &ts
     endif
   endfor
