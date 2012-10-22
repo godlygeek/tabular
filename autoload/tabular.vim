@@ -46,22 +46,30 @@ set cpo&vim
 
 " Return the number of bytes in a string after expanding tabs to spaces.  {{{2
 " This expansion is done based on the current value of 'tabstop'
-function! s:Strlen(string)
-  let rv = 0
-  let i = 0
+if exists('*strdisplaywidth')
+  " Needs vim 7.3
+  let s:Strlen = function("strdisplaywidth")
+else
+  function! s:Strlen(string)
+    " Implement the tab handling part of strdisplaywidth for vim 7.2 and
+    " earlier - not much that can be done about handling doublewidth
+    " characters.
+    let rv = 0
+    let i = 0
 
-  for char in split(a:string, '\zs')
-    if char == "\t"
-      let rv += &ts - i
-      let i = 0
-    else
-      let rv += 1
-      let i = (i + 1) % &ts
-    endif
-  endfor
+    for char in split(a:string, '\zs')
+      if char == "\t"
+        let rv += &ts - i
+        let i = 0
+      else
+        let rv += 1
+        let i = (i + 1) % &ts
+      endif
+    endfor
 
-  return rv
-endfunction
+    return rv
+  endfunction
+endif
 
 " Align a string within a field                                           {{{2
 " These functions do not trim leading and trailing spaces.
