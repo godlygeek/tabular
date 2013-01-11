@@ -90,9 +90,12 @@ function! s:ChooseCommandMap(commandline)
 endfunction
 
 " Parse '/pattern/format' into separate pattern and format parts.         {{{2
+" If pattern is not present, use current search pattern
 " If parsing fails, return [ '', '' ]
 function! s:ParsePattern(string)
-  if a:string[0] != '/'
+  if empty(a:string)
+    return [@/,'']
+  elseif a:string[0] != '/'
     return ['','']
   endif
 
@@ -103,6 +106,14 @@ function! s:ParsePattern(string)
     let pattern = a:string[1 : -len(format) - 2]
   else
     let pattern = a:string[1 : -1]
+  endif
+
+  if empty(pattern)
+    let pattern = @/
+  else
+    " assign pattern as search pattern to act like with other highly integrated
+    " commands, e.g. :g
+    let @/ = pattern
   endif
 
   return [pattern, format]
