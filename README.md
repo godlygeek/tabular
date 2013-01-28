@@ -1,4 +1,4 @@
-Tabular readme
+Tabular
 ==============
 Sometimes, it's useful to line up text.  Naturally, it's nicer to have the
 computer do this for you, since aligning things by hand quickly becomes
@@ -7,3 +7,8 @@ tried are either impossibly difficult to understand and use, or too simplistic
 to handle complicated tasks.  This plugin aims to make the easy things easy
 and the hard things possible, without providing an unnecessarily obtuse
 interface.  It's still a work in progress, and criticisms are welcome.
+
+See [Aligning Text with Tabular.vim](http://vimcasts.org/episodes/aligning-text-with-tabular-vim/)
+for a screencast that shows how Tabular.vim works.
+
+See [doc/Tabular.txt](http://raw.github.com/godlygeek/tabular/master/doc/Tabular.txt) for detailed documentation.
