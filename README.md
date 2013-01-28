@@ -11,8 +11,19 @@ interface.  It's still a work in progress, and criticisms are welcome.
 See [Aligning Text with Tabular.vim](http://vimcasts.org/episodes/aligning-text-with-tabular-vim/)
 for a screencast that shows how Tabular.vim works.
 
-The easiest way to install Tabular is to use [pathogen](https://github.com/tpope/vim-pathogen).
-
 See [doc/Tabular.txt](http://raw.github.com/godlygeek/tabular/master/doc/Tabular.txt)
-for detailed documentation - or, after installing Tabular, you can use `:help tabular`
-for a syntax-highlighted version of the docs.
+for detailed documentation.
+
+Installation
+==============
+If you don't have a preferred installation method, I recommend installing
+[pathogen.vim](https://github.com/tpope/vim-pathogen), and then simply
+copy and paste:
+
+    mkdir -p ~/.vim/bundle
+    cd ~/.vim/bundle
+    git clone git://github.com/godlygeek/tabular.git
+
+Once help tags have been generated (either using Pathogen's `:Helptags`
+command, or by pointing vim's `:helptags` command at the directory where you
+installed Tabular), you can view the manual with `:help tabular`.
