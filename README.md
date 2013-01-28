@@ -11,4 +11,8 @@ interface.  It's still a work in progress, and criticisms are welcome.
 See [Aligning Text with Tabular.vim](http://vimcasts.org/episodes/aligning-text-with-tabular-vim/)
 for a screencast that shows how Tabular.vim works.
 
-See [doc/Tabular.txt](http://raw.github.com/godlygeek/tabular/master/doc/Tabular.txt) for detailed documentation.
+The easiest way to install Tabular is to use [pathogen](https://github.com/tpope/vim-pathogen).
+
+See [doc/Tabular.txt](http://raw.github.com/godlygeek/tabular/master/doc/Tabular.txt)
+for detailed documentation - or, after installing Tabular, you can use `:help tabular`
+for a syntax-highlighted version of the docs.
