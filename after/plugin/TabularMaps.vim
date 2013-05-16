@@ -1,4 +1,4 @@
-if !exists(':Tabularize')
+if !exists(':Tabularize') || (exists("g:no_default_tabular_maps") && g:no_default_tabular_maps)
   finish " Tabular.vim wasn't loaded
 endif
 
