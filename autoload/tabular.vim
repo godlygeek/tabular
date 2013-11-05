@@ -106,6 +106,24 @@ function! s:StripLeadingSpaces(string)
   return matchstr(a:string, '^\s*\zs.*$')
 endfunction
 
+" Find the longest common indent for a list of strings                    {{{2
+function! s:LongestCommonIndent(strings)
+  if empty(a:strings)
+    return ''
+  endif
+
+  let n = 0
+  while 1
+    let ns = join(map(copy(a:strings), 'v:val[n]'), '')
+    if ns != repeat(' ', len(a:strings)) && ns != repeat("\t", len(a:strings))
+      break
+    endif
+    let n += 1
+  endwhile
+
+  return strpart(a:strings[0], 0, n)
+endfunction
+
 " Split a string into fields and delimiters                               {{{2
 " Like split(), but include the delimiters as elements
 " All odd numbered elements are delimiters
@@ -220,22 +238,23 @@ function! tabular#TabularizeStrings(strings, delim, ...)
 
   let format = split(formatstr, s:formatelempat . '\zs')
 
-  let lines = map(a:strings, 's:SplitDelim(v:val, a:delim)')
+  let lines = a:strings
 
-  " Strip spaces
-  "   - Only from non-delimiters; spaces in delimiters must have been matched
-  "     intentionally
-  "   - Don't strip leading spaces from the first element; we like indenting.
+  " Find and strip the common indent from all lines
+  let common_indent = s:LongestCommonIndent(lines)
+  call map(lines, 'strpart(v:val, len(common_indent))')
+
+  call map(lines, 's:SplitDelim(v:val, a:delim)')
+
+  " Strip spaces from non-delimiters; spaces in delimiters must have been
+  " matched intentionally
   for line in lines
     if len(line) == 1 && s:do_gtabularize
       continue " Leave non-matching lines unchanged for GTabularize
     endif
 
-    if line[0] !~ '^\s*$'
-      let line[0] = s:StripTrailingSpaces(line[0])
-    endif
-    if len(line) >= 3
-      for i in range(2, len(line)-1, 2)
+    if len(line) >= 1
+      for i in range(0, len(line)-1, 2)
         let line[i] = s:StripLeadingSpaces(s:StripTrailingSpaces(line[i]))
       endfor
     endif
@@ -285,6 +304,9 @@ function! tabular#TabularizeStrings(strings, delim, ...)
 
     let lines[idx] = s:StripTrailingSpaces(join(line, ''))
   endfor
+
+  " Add the common indent back to all the lines
+  call map(lines, 'common_indent . v:val')
 endfunction
 
 " Apply 0 or more filters, in sequence, to selected text in the buffer    {{{2
