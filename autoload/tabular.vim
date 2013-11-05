@@ -106,6 +106,27 @@ function! s:StripLeadingSpaces(string)
   return matchstr(a:string, '^\s*\zs.*$')
 endfunction
 
+" Find the longest common indent for a list of strings                    {{{2
+" If a string is shorter than the others but contains no non-whitespace
+" characters, it does not end the match.  This provides consistency with
+" vim's behavior that blank lines don't have trailing spaces.
+function! s:LongestCommonIndent(strings)
+  if empty(a:strings)
+    return ''
+  endif
+
+  let n = 0
+  while 1
+    let ns = join(map(copy(a:strings), 'v:val[n]'), '')
+    if ns !~ '^ \+$\|^\t\+$'
+      break
+    endif
+    let n += 1
+  endwhile
+
+  return strpart(a:strings[0], 0, n)
+endfunction
+
 " Split a string into fields and delimiters                               {{{2
 " Like split(), but include the delimiters as elements
 " All odd numbered elements are delimiters
@@ -220,26 +241,29 @@ function! tabular#TabularizeStrings(strings, delim, ...)
 
   let format = split(formatstr, s:formatelempat . '\zs')
 
-  let lines = map(a:strings, 's:SplitDelim(v:val, a:delim)')
+  let lines = a:strings
 
-  " Strip spaces
-  "   - Only from non-delimiters; spaces in delimiters must have been matched
-  "     intentionally
-  "   - Don't strip leading spaces from the first element; we like indenting.
+  call map(lines, 's:SplitDelim(v:val, a:delim)')
+
+  let first_fields = []
+
+  " Strip spaces from non-delimiters; spaces in delimiters must have been
+  " matched intentionally
   for line in lines
     if len(line) == 1 && s:do_gtabularize
       continue " Leave non-matching lines unchanged for GTabularize
     endif
 
-    if line[0] !~ '^\s*$'
-      let line[0] = s:StripTrailingSpaces(line[0])
-    endif
-    if len(line) >= 3
-      for i in range(2, len(line)-1, 2)
+    call add(first_fields, line[0])
+
+    if len(line) >= 1
+      for i in range(0, len(line)-1, 2)
         let line[i] = s:StripLeadingSpaces(s:StripTrailingSpaces(line[i]))
       endfor
     endif
   endfor
+
+  let common_indent = s:LongestCommonIndent(first_fields)
 
   " Find the max length of each field
   let maxes = []
@@ -256,8 +280,6 @@ function! tabular#TabularizeStrings(strings, delim, ...)
       endif
     endfor
   endfor
-
-  let lead_blank = empty(filter(copy(lines), 'v:val[0] =~ "\\S"'))
 
   " Concatenate the fields, according to the format pattern.
   for idx in range(len(lines))
@@ -280,10 +302,16 @@ function! tabular#TabularizeStrings(strings, delim, ...)
         let field = s:Center(line[i], maxes[i])
       endif
 
-      let line[i] = field . (lead_blank && i == 0 ? '' : repeat(" ", pad))
+      let line[i] = field . repeat(" ", pad)
     endfor
 
-    let lines[idx] = s:StripTrailingSpaces(join(line, ''))
+    let prefix = common_indent
+    if len(line) == 1 && s:do_gtabularize
+      " We didn't strip the indent in this case; nothing to put back.
+      let prefix = ''
+    endif
+
+    let lines[idx] = s:StripTrailingSpaces(prefix . join(line, ''))
   endfor
 endfunction
 
