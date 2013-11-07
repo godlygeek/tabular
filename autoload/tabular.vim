@@ -107,6 +107,9 @@ function! s:StripLeadingSpaces(string)
 endfunction
 
 " Find the longest common indent for a list of strings                    {{{2
+" If a string is shorter than the others but contains no non-whitespace
+" characters, it does not end the match.  This provides consistency with
+" vim's behavior that blank lines don't have trailing spaces.
 function! s:LongestCommonIndent(strings)
   if empty(a:strings)
     return ''
@@ -115,7 +118,7 @@ function! s:LongestCommonIndent(strings)
   let n = 0
   while 1
     let ns = join(map(copy(a:strings), 'v:val[n]'), '')
-    if ns != repeat(' ', len(a:strings)) && ns != repeat("\t", len(a:strings))
+    if ns !~ '^ \+$\|^\t\+$'
       break
     endif
     let n += 1
@@ -251,9 +254,7 @@ function! tabular#TabularizeStrings(strings, delim, ...)
       continue " Leave non-matching lines unchanged for GTabularize
     endif
 
-    if line[0] !~ '^\s*$'
-      call add(first_fields, line[0])
-    endif
+    call add(first_fields, line[0])
 
     if len(line) >= 1
       for i in range(0, len(line)-1, 2)
