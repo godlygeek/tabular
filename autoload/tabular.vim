@@ -240,11 +240,9 @@ function! tabular#TabularizeStrings(strings, delim, ...)
 
   let lines = a:strings
 
-  " Find and strip the common indent from all lines
-  let common_indent = s:LongestCommonIndent(lines)
-  call map(lines, 'strpart(v:val, len(common_indent))')
-
   call map(lines, 's:SplitDelim(v:val, a:delim)')
+
+  let first_fields = []
 
   " Strip spaces from non-delimiters; spaces in delimiters must have been
   " matched intentionally
@@ -253,12 +251,18 @@ function! tabular#TabularizeStrings(strings, delim, ...)
       continue " Leave non-matching lines unchanged for GTabularize
     endif
 
+    if line[0] !~ '^\s*$'
+      call add(first_fields, line[0])
+    endif
+
     if len(line) >= 1
       for i in range(0, len(line)-1, 2)
         let line[i] = s:StripLeadingSpaces(s:StripTrailingSpaces(line[i]))
       endfor
     endif
   endfor
+
+  let common_indent = s:LongestCommonIndent(first_fields)
 
   " Find the max length of each field
   let maxes = []
@@ -275,8 +279,6 @@ function! tabular#TabularizeStrings(strings, delim, ...)
       endif
     endfor
   endfor
-
-  let lead_blank = empty(filter(copy(lines), 'v:val[0] =~ "\\S"'))
 
   " Concatenate the fields, according to the format pattern.
   for idx in range(len(lines))
@@ -299,14 +301,17 @@ function! tabular#TabularizeStrings(strings, delim, ...)
         let field = s:Center(line[i], maxes[i])
       endif
 
-      let line[i] = field . (lead_blank && i == 0 ? '' : repeat(" ", pad))
+      let line[i] = field . repeat(" ", pad)
     endfor
 
-    let lines[idx] = s:StripTrailingSpaces(join(line, ''))
-  endfor
+    let prefix = common_indent
+    if len(line) == 1 && s:do_gtabularize
+      " We didn't strip the indent in this case; nothing to put back.
+      let prefix = ''
+    endif
 
-  " Add the common indent back to all the lines
-  call map(lines, 'common_indent . v:val')
+    let lines[idx] = s:StripTrailingSpaces(prefix . join(line, ''))
+  endfor
 endfunction
 
 " Apply 0 or more filters, in sequence, to selected text in the buffer    {{{2
