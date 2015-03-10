@@ -146,9 +146,9 @@ endfunction
 function! s:FieldToString(field, align, max)
   if a:align =~? 'l'
     return s:Left(a:field, a:max)
-  elseif how =~? 'r'
+  elseif a:align =~? 'r'
     return s:Right(a:field, a:max)
-  elseif how =~? 'c'
+  elseif a:align =~? 'c'
     return s:Center(a:field, a:max)
   endif
 endfunction
