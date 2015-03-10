@@ -128,7 +128,7 @@ to require looping through the fields again.  For instance:
     a,b,c
     a,b,c,d,e
 
-        abc,defghi,jk
+        abc,defghi,jkl
         abcdefghijkl,m
         a,b,c
         +.......+.......+.......+.......+.......+
