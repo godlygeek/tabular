@@ -125,7 +125,8 @@ endfunction
 function! s:PaddingToString(padding, position)
   let result = ""
   let offset = 0
-  let sections = split(a:padding, s:paddingpat . '\zs')
+  let padding = substitute(a:padding, " ", "", "g")
+  let sections = split(padding, s:paddingpat . '\zs')
   for section in sections
     let l:count = matchstr(section, '^\d\+')
     let l:count = len(l:count) ? str2nr(l:count) : 1
@@ -257,7 +258,7 @@ if !exists("g:tabular_default_padding")
   let g:tabular_default_padding = "s"
 endif
 
-let s:paddingpat    = '\%(\d\+[st]\?\|[st]\)'
+let s:paddingpat    = '\%(\%(\d\+[st]\?\|[st]\) *\)'
 let s:formatelempat = '\%([lrc]' . s:paddingpat . '\+\)'
 
 function! tabular#ElementFormatPattern()

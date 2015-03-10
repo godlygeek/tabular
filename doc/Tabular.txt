@@ -94,12 +94,13 @@ A format specifier is composed of an alignment specifier followed by a padding
 specifier. The alignment specifier is either l, r, or c. If the letter is l,
 the field will be left aligned, similarly for r and right aligning and c and
 center aligning. The padding specification is a repeated sequence composed of
-one or more digits followed by a whitespace specifier of s or t. Either digit
-sequence or whitespace specifier is optional, but not both. Omitted, the
-whitespace specifier defaults to |g:tabular_default_padding|. Conversely, the
-digit sequence defaults to one. A whitespace specifier of s represents space,
-similarly for t and tab. Each represented character is repeated as per the
-digit sequence.  Tabs respect the  |shiftwidth| and |expandtab| settings.
+one or more digits followed by a whitespace specifier of s or t, terminated by
+optional space characters. Either digit sequence or whitespace specifier is
+optional, but not both. Omitted, the whitespace specifier defaults to
+|g:tabular_default_padding|. Conversely, the digit sequence defaults to one. A
+whitespace specifier of s represents space, similarly for t and tab. Each
+represented character is repeated as per the digit sequence.  Tabs respect the
+|shiftwidth| and |expandtab| settings.
 
 Multiple format specifiers can be added to the same command - each field will
 be printed with the next format specifier in the list; when they all have been
@@ -127,14 +128,14 @@ to require looping through the fields again.  For instance:
     a,b,c
     a,b,c,d,e
 
-        abc,defghi,jkl
+        abc,defghi,jk
         abcdefghijkl,m
         a,b,c
         +.......+.......+.......+.......+.......+
 
   :echo [&tabstop, &expandtab]
   [8, 1]
-  :exec "Tabularize /,/r1ctl0ct" | exec "norm }j" | Tabularize
+  :exec "Tabularize /,/r1 ct l0 ct" | exec "norm }j" | Tabularize
 
         +.......+.......+.......+.......+.......+
     abc ,       def,    ghi ,   jkl,    mno
@@ -151,9 +152,6 @@ Notice that now, the format pattern has been reused: field 5 (containing
 field 7 (containing "jkl") is left aligned. A tab is inserted between the 4th
 field (the second comma) and the 5th field (containing "ghi") because the
 format specifier "ct".
-
-Notice that, without any arguments, the most recent 'Tabularize' pattern will
-automatically be reused.
 
 The "+" characters in the visual guide represent the tabstop locations. Notice
 how, irrespective of indent the correct number of spaces are automatically
