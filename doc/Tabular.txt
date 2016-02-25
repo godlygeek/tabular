@@ -27,7 +27,7 @@ variable in your |vimrc| file: >
     :let g:tabular_loaded = 1
 
 ==============================================================================
-1. Description                                                 *tabular-intro*
+1. Description                                   *tabular-intro* *:Tabularize*
 
 Sometimes, it's useful to line up text.  Naturally, it's nicer to have the
 computer do this for you, since aligning things by hand quickly becomes
