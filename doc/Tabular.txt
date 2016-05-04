@@ -38,7 +38,7 @@ and the hard things possible, without providing an unnecessarily obtuse
 interface.  It's still a work in progress, and criticisms are welcome.
 
 ==============================================================================
-2. Walkthrough                                           *tabular-walkthrough*
+2. Walkthrough                             *tabular-walkthrough* *:Tabularize*
 
 Tabular's commands are based largely on regular expressions.  The basic
 technique used by Tabular is taking some regex to match field delimiters,
