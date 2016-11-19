@@ -302,6 +302,11 @@ function! tabular#TabularizeStrings(strings, delim, ...)
         let field = s:Center(line[i], maxes[i])
       endif
 
+      if i == 0 && maxes[i] == 0
+        " If the first field is blank on all lines, don't pad after it
+        let pad = 0
+      endif
+
       let line[i] = field . repeat(" ", pad)
     endfor
 
