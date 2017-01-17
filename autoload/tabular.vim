@@ -62,7 +62,11 @@ else
         let rv += &ts - i
         let i = 0
       else
-        let rv += 1
+        if char2nr(char) > 255
+          let rv += 2
+        else
+          let rv += 1
+        endif
         let i = (i + 1) % &ts
       endif
     endfor
