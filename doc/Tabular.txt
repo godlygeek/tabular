@@ -76,6 +76,9 @@ interactive use it's a nice timesaver.  Another convenience feature is that
 running :Tabularize without providing a new pattern will cause it to reuse the
 last pattern it was called with.
 
+Another convenience feature is that, by running :Tabularize without specifying
+a new pattern, you can easily reuse the pattern from the last time you ran it.
+
 So, anyway, now the commas line up.  Splitting the lines on commas, Tabular
 realized that 'Some short phrase' would need to be padded with spaces to match
 the length of 'A much longer phrase here', and it did that before joining the

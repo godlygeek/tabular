@@ -92,6 +92,10 @@ endfunction
 " Parse '/pattern/format' into separate pattern and format parts.         {{{2
 " If parsing fails, return [ '', '' ]
 function! s:ParsePattern(string)
+  if empty(a:string) && exists('s:last_pattern')
+    return s:last_pattern
+  endif
+
   if a:string[0] != '/'
     return ['','']
   endif
@@ -105,6 +109,7 @@ function! s:ParsePattern(string)
     let pattern = a:string[1 : -1]
   endif
 
+  let s:last_pattern = [pattern, format]
   return [pattern, format]
 endfunction
 
