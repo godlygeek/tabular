@@ -171,7 +171,7 @@ Tabular.vim in the same directory as TabularMaps.vim.  For more information,
 and some suggested best practices, check out the |tabular-scripting| section.
 
 Lastly, we'll approach the case where tabular cannot achieve your desired goal
-just by splitting lines appart, trimming whitespace, padding with whitespace,
+just by splitting lines apart, trimming whitespace, padding with whitespace,
 and rejoining the lines.  As an example, consider the multiple_spaces command
 from TabularMaps.vim.  The goal is to split using two or more spaces as a
 field delimiter, and join fields back together, properly lined up, with only
