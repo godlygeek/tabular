@@ -71,6 +71,18 @@ else
   endfunction
 endif
 
+function! s:TabOffset(position, string)
+  let offset = 0
+  let sections = split(a:string, "\t", 1)
+  for index in range(len(sections))
+    let offset += s:Strlen(sections[index])
+    if index+1 < len(sections)
+      let offset += &tabstop - ((a:position + offset) % &tabstop)
+    endif
+  endfor
+  return offset
+endfunction
+
 " Align a string within a field                                           {{{2
 " These functions do not trim leading and trailing spaces.
 
@@ -92,6 +104,54 @@ function! s:Center(string, fieldwidth)
   let right = spaces / 2
   let left = right + (right * 2 != spaces)
   return repeat(" ", left) . a:string . repeat(" ", right)
+endfunction
+
+function! s:TabToString(position, count)
+  if a:count <= 0
+    throw "Invalid tab count!"
+  endif
+ 
+  let offset = &tabstop - (a:position % &tabstop)
+  if &expandtab
+    let result = repeat(" ", offset) . repeat(" ", &tabstop * (a:count - 1))
+  else
+    let result = repeat("\t", a:count)
+  endif
+  let offset += a:count - 1
+  return [offset, result]
+endfunction
+
+" Convert padding specification to string:
+function! s:PaddingToString(padding, position)
+  let result = ""
+  let offset = 0
+  let padding = substitute(a:padding, " ", "", "g")
+  let sections = split(padding, s:paddingpat . '\zs')
+  for section in sections
+    let l:count = matchstr(section, '^\d\+')
+    let l:count = len(l:count) ? str2nr(l:count) : 1
+    let type = matchstr(section, '[st]$')
+    let type = len(type)  ? type : g:tabular_default_padding
+    if type ==? "s"
+      let result .= repeat(" ", l:count)
+      let offset += l:count
+    else
+      let [section_offset, section_result] = s:TabToString(a:position + offset, l:count)
+      let result .= section_result
+      let offset += section_offset
+    endif
+  endfor
+  return [offset, result]
+endfunction
+
+function! s:FieldToString(field, align, max)
+  if a:align =~? 'l'
+    return s:Left(a:field, a:max)
+  elseif a:align =~? 'r'
+    return s:Right(a:field, a:max)
+  elseif a:align =~? 'c'
+    return s:Center(a:field, a:max)
+  endif
 endfunction
 
 " Remove spaces around a string                                           {{{2
@@ -194,7 +254,12 @@ if !exists("g:tabular_default_format")
   let g:tabular_default_format = "l1"
 endif
 
-let s:formatelempat = '\%([lrc]\d\+\)'
+if !exists("g:tabular_default_padding")
+  let g:tabular_default_padding = "s"
+endif
+
+let s:paddingpat    = '\%(\%(\d\+[st]\?\|[st]\) *\)'
+let s:formatelempat = '\%([lrc]' . s:paddingpat . '\+\)'
 
 function! tabular#ElementFormatPattern()
   return s:formatelempat
@@ -268,19 +333,14 @@ function! tabular#TabularizeStrings(strings, delim, ...)
       continue
     endif
 
+    let l:count = 0
     for i in range(len(line))
-      let how = format[i % len(format)][0]
-      let pad = format[i % len(format)][1:-1]
-
-      if how =~? 'l'
-        let field = s:Left(line[i], maxes[i])
-      elseif how =~? 'r'
-        let field = s:Right(line[i], maxes[i])
-      elseif how =~? 'c'
-        let field = s:Center(line[i], maxes[i])
-      endif
-
-      let line[i] = field . (lead_blank && i == 0 ? '' : repeat(" ", pad))
+      let align     = format[i % len(format)][0]
+      let field     = s:FieldToString(line[i], align, maxes[i])
+      let l:count  += s:TabOffset(l:count, field)
+      let padding   = s:PaddingToString(format[i % len(format)][1:-1], l:count)
+      let l:count  += padding[0]
+      let line[i] = field . (lead_blank && i == 0 ? '' : padding[1])
     endfor
 
     let lines[idx] = s:StripTrailingSpaces(join(line, ''))
