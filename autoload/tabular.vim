@@ -231,9 +231,7 @@ function! tabular#TabularizeStrings(strings, delim, ...)
       continue " Leave non-matching lines unchanged for GTabularize
     endif
 
-    if line[0] !~ '^\s*$'
-      let line[0] = s:StripTrailingSpaces(line[0])
-    endif
+    let line[0] = s:StripTrailingSpaces(line[0])
     if len(line) >= 3
       for i in range(2, len(line)-1, 2)
         let line[i] = s:StripLeadingSpaces(s:StripTrailingSpaces(line[i]))
