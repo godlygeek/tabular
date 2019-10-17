@@ -27,3 +27,35 @@ copy and paste:
 Once help tags have been generated (either using Pathogen's `:Helptags`
 command, or by pointing vim's `:helptags` command at the directory where you
 installed Tabular), you can view the manual with `:help tabular`.
+
+Example
+=============
+
+Align php arrows with `vi[:Tabularize /=>`
+
+Before:
+```php
+          $locations[] = [
+            'image'    => get_sub_field('image'),
+            'title'       => get_sub_field('title'),
+            'link' => get_sub_field('link'),
+          ];
+
+```
+
+After:
+```php
+          $locations[] = [
+            'image' => get_sub_field('image'),
+            'title' => get_sub_field('title'),
+            'link'  => get_sub_field('link'),
+          ];
+
+```
+
+Create your own commands: 
+
+```php
+" Creates command AlignPHPArrows
+command! AlignPHPArrows :normal vi[:Tabularize /=>^M
+```
