@@ -1,42 +1,7 @@
 " Tabular:     Align columnar data using regex-designated column boundaries
-" Maintainer:  Matthew Wozniski (godlygeek@gmail.com)
-" Date:        Thu, 03 May 2012 20:49:32 -0400
-" Version:     1.0
-"
-" Long Description:
-" Sometimes, it's useful to line up text.  Naturally, it's nicer to have the
-" computer do this for you, since aligning things by hand quickly becomes
-" unpleasant.  While there are other plugins for aligning text, the ones I've
-" tried are either impossibly difficult to understand and use, or too simplistic
-" to handle complicated tasks.  This plugin aims to make the easy things easy
-" and the hard things possible, without providing an unnecessarily obtuse
-" interface.  It's still a work in progress, and criticisms are welcome.
-"
-" License:
-" Copyright (c) 2012, Matthew J. Wozniski
-" All rights reserved.
-"
-" Redistribution and use in source and binary forms, with or without
-" modification, are permitted provided that the following conditions are met:
-"     * Redistributions of source code must retain the above copyright notice,
-"       this list of conditions and the following disclaimer.
-"     * Redistributions in binary form must reproduce the above copyright
-"       notice, this list of conditions and the following disclaimer in the
-"       documentation and/or other materials provided with the distribution.
-"     * The names of the contributors may not be used to endorse or promote
-"       products derived from this software without specific prior written
-"       permission.
-"
-" THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ``AS IS'' AND ANY EXPRESS
-" OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-" OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
-" NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT,
-" INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-" LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
-" OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-" LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-" NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-" EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+" Maintainer:  Matthew Wozniski (mjw@drexel.edu)
+" Date:        Thu, 11 Oct 2007 00:35:34 -0400
+" Version:     0.1
 
 " Abort if running in vi-compatible mode or the user doesn't want us.
 if &cp || exists('g:tabular_loaded')
@@ -194,7 +159,9 @@ function! AddTabularPattern(command, force)
 
     let command .= ")"
 
-    let commandmap[name] = { 'pattern' : pattern, 'commands' : [ command ] }
+    let commandmap[name] = ":call tabular#PipeRange("
+          \ . string(pattern) . ","
+          \ . string(command) . ")"
   catch
     echohl ErrorMsg
     echomsg "AddTabularPattern: " . v:exception
@@ -247,7 +214,15 @@ function! AddTabularPipeline(command, force)
       throw "Must provide a list of functions!"
     endif
 
-    let commandmap[name] = { 'pattern' : pattern, 'commands' : commandlist }
+    let cmd = ":call tabular#PipeRange(" . string(pattern)
+
+    for command in commandlist
+      let cmd .= "," . string(command)
+    endfor
+
+    let cmd .= ")"
+
+    let commandmap[name] = cmd
   catch
     echohl ErrorMsg
     echomsg "AddTabularPipeline: " . v:exception
@@ -263,12 +238,7 @@ endfunction
 com! -nargs=* -range -complete=customlist,<SID>CompleteTabularizeCommand
    \ Tabularize <line1>,<line2>call Tabularize(<q-args>)
 
-function! Tabularize(command, ...) range
-  let piperange_opt = {}
-  if a:0
-    let piperange_opt = a:1
-  endif
-
+function! Tabularize(command) range
   if empty(a:command)
     if !exists("s:last_tabularize_command")
       echohl ErrorMsg
@@ -296,19 +266,17 @@ function! Tabularize(command, ...) range
 
       let cmd .= ")"
 
-      exe range . 'call tabular#PipeRangeWithOptions(pattern, [ cmd ], '
-                      \ . 'piperange_opt)'
+      exe range . 'call tabular#PipeRange(pattern, cmd)'
     else
       if exists('b:TabularCommands') && has_key(b:TabularCommands, command)
-        let usercmd = b:TabularCommands[command]
+        let command = b:TabularCommands[command]
       elseif has_key(s:TabularCommands, command)
-        let usercmd = s:TabularCommands[command]
+        let command = s:TabularCommands[command]
       else
         throw "Unrecognized command " . string(command)
       endif
 
-      exe range . 'call tabular#PipeRangeWithOptions(usercmd["pattern"], '
-                      \ . 'usercmd["commands"], piperange_opt)'
+      exe range . command
     endif
   catch
     echohl ErrorMsg
@@ -317,27 +285,6 @@ function! Tabularize(command, ...) range
     return
   endtry
 endfunction
-
-" GTabularize /pattern[/format]                                           {{{2
-" GTabularize name
-"
-" Align text on only matching lines, either using the given pattern, or the
-" command associated with the given name.  Mnemonically, this is similar to
-" the :global command, which takes some action on all rows matching a pattern
-" in a range.  This command is different from normal :Tabularize in 3 ways:
-"   1) If a line in the range does not match the pattern, it will be left
-"      unchanged, and not in any way affect the outcome of other lines in the
-"      range (at least, normally - but Pipelines can and will still look at
-"      non-matching rows unless they are specifically written to be aware of
-"      tabular#DoGTabularize() and handle it appropriately).
-"   2) No automatic range determination - :Tabularize automatically expands
-"      a single-line range (or a call with no range) to include all adjacent
-"      matching lines.  That behavior does not make sense for this command.
-"   3) If called without a range, it will act on all lines in the buffer (like
-"      :global) rather than only a single line
-com! -nargs=* -range=% -complete=customlist,<SID>CompleteTabularizeCommand
-   \ GTabularize <line1>,<line2>
-   \ call Tabularize(<q-args>, { 'mode': 'GTabularize' } )
 
 " Stupid vimscript crap, part 2                                           {{{1
 let &cpo = s:savecpo

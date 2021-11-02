@@ -1,42 +1,7 @@
 " Tabular:     Align columnar data using regex-designated column boundaries
-" Maintainer:  Matthew Wozniski (godlygeek@gmail.com)
-" Date:        Thu, 03 May 2012 20:49:32 -0400
-" Version:     1.0
-"
-" Long Description:
-" Sometimes, it's useful to line up text.  Naturally, it's nicer to have the
-" computer do this for you, since aligning things by hand quickly becomes
-" unpleasant.  While there are other plugins for aligning text, the ones I've
-" tried are either impossibly difficult to understand and use, or too simplistic
-" to handle complicated tasks.  This plugin aims to make the easy things easy
-" and the hard things possible, without providing an unnecessarily obtuse
-" interface.  It's still a work in progress, and criticisms are welcome.
-"
-" License:
-" Copyright (c) 2012, Matthew J. Wozniski
-" All rights reserved.
-"
-" Redistribution and use in source and binary forms, with or without
-" modification, are permitted provided that the following conditions are met:
-"     * Redistributions of source code must retain the above copyright notice,
-"       this list of conditions and the following disclaimer.
-"     * Redistributions in binary form must reproduce the above copyright
-"       notice, this list of conditions and the following disclaimer in the
-"       documentation and/or other materials provided with the distribution.
-"     * The names of the contributors may not be used to endorse or promote
-"       products derived from this software without specific prior written
-"       permission.
-"
-" THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ``AS IS'' AND ANY EXPRESS
-" OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-" OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
-" NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT,
-" INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-" LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
-" OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-" LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-" NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-" EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+" Maintainer:  Matthew Wozniski (mjw@drexel.edu)
+" Date:        Thu, 11 Oct 2007 00:35:34 -0400
+" Version:     0.1
 
 " Stupid vimscript crap                                                   {{{1
 let s:savecpo = &cpo
@@ -219,10 +184,6 @@ function! tabular#TabularizeStrings(strings, delim, ...)
   "     intentionally
   "   - Don't strip leading spaces from the first element; we like indenting.
   for line in lines
-    if len(line) == 1 && s:do_gtabularize
-      continue " Leave non-matching lines unchanged for GTabularize
-    endif
-
     if line[0] !~ '^\s*$'
       let line[0] = s:StripTrailingSpaces(line[0])
     endif
@@ -236,10 +197,6 @@ function! tabular#TabularizeStrings(strings, delim, ...)
   " Find the max length of each field
   let maxes = []
   for line in lines
-    if len(line) == 1 && s:do_gtabularize
-      continue " non-matching lines don't affect field widths for GTabularize
-    endif
-
     for i in range(len(line))
       if i == len(maxes)
         let maxes += [ s:Strlen(line[i]) ]
@@ -254,12 +211,6 @@ function! tabular#TabularizeStrings(strings, delim, ...)
   " Concatenate the fields, according to the format pattern.
   for idx in range(len(lines))
     let line = lines[idx]
-
-    if len(line) == 1 && s:do_gtabularize
-      let lines[idx] = line[0] " GTabularize doesn't change non-matching lines
-      continue
-    endif
-
     for i in range(len(line))
       let how = format[i % len(format)][0]
       let pad = format[i % len(format)][1:-1]
@@ -284,8 +235,6 @@ endfunction
 "   If the function is called with a range containing multiple lines, then
 "     those lines will be used as the range.
 "   If the function is called with no range or with a range of 1 line, then
-"     if GTabularize mode is being used,
-"       the range will not be adjusted
 "     if "includepat" is not specified,
 "       that 1 line will be filtered,
 "     if "includepat" is specified and that line does not match it,
@@ -297,41 +246,24 @@ endfunction
 " The remaining arguments must each be a filter to apply to the text.
 " Each filter must either be a String evaluating to a function to be called.
 function! tabular#PipeRange(includepat, ...) range
-  exe a:firstline . ',' . a:lastline
-      \ . 'call tabular#PipeRangeWithOptions(a:includepat, a:000, {})'
-endfunction
-
-" Extended version of tabular#PipeRange, which
-" 1) Takes the list of filters as an explicit list rather than as varargs
-" 2) Supports passing a dictionary of options to control the routine.
-"    Currently, the only supported option is 'mode', which determines whether
-"    to behave as :Tabularize or as :GTabularize
-" This allows me to add new features here without breaking API compatibility
-" in the future.
-function! tabular#PipeRangeWithOptions(includepat, filterlist, options) range
   let top = a:firstline
   let bot = a:lastline
 
-  let s:do_gtabularize = (get(a:options, 'mode', '') ==# 'GTabularize')
-
-  if !s:do_gtabularize
-    " In the default mode, apply range extension logic
-    if a:includepat != '' && top == bot
-      if top < 0 || top > line('$') || getline(top) !~ a:includepat
-        return
-      endif
-      while top > 1 && getline(top-1) =~ a:includepat
-        let top -= 1
-      endwhile
-      while bot < line('$') && getline(bot+1) =~ a:includepat
-        let bot += 1
-      endwhile
+  if a:includepat != '' && top == bot
+    if top < 0 || top > line('$') || getline(top) !~ a:includepat
+      return
     endif
+    while top > 1 && getline(top-1) =~ a:includepat
+      let top -= 1
+    endwhile
+    while bot < line('$') && getline(bot+1) =~ a:includepat
+      let bot += 1
+    endwhile
   endif
 
   let lines = map(range(top, bot), 'getline(v:val)')
 
-  for filter in a:filterlist
+  for filter in a:000
     if type(filter) != type("")
       echoerr "PipeRange: Bad filter: " . string(filter)
     endif
@@ -342,12 +274,6 @@ function! tabular#PipeRangeWithOptions(includepat, filterlist, options) range
   endfor
 
   call s:SetLines(top, bot - top + 1, lines)
-endfunction
-
-" Part of the public interface so interested pipelines can query this and
-" adjust their behavior appropriately.
-function! tabular#DoGTabularize()
-  return s:do_gtabularize
 endfunction
 
 function! s:SplitDelimTest(string, delim, expected)
