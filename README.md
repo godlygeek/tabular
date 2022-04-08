@@ -16,14 +16,21 @@ for detailed documentation.
 
 Installation
 ==============
-If you don't have a preferred installation method, I recommend installing
-[pathogen.vim](https://github.com/tpope/vim-pathogen), and then simply
-copy and paste:
+## Vim 8.1+
+no third-party package manager is required! Clone into:
+
+`.vim/pack/plugins/start`
+
+and make sure to include `packloadall` in your `.vimrc`.
+
+## Pathogen 
 
     mkdir -p ~/.vim/bundle
     cd ~/.vim/bundle
     git clone git://github.com/godlygeek/tabular.git
-
+    
 Once help tags have been generated (either using Pathogen's `:Helptags`
 command, or by pointing vim's `:helptags` command at the directory where you
 installed Tabular), you can view the manual with `:help tabular`.
+
+See [Pathogen](https://github.com/tpope/vim-pathogen) for help or package manager installation.
