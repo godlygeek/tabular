@@ -22,7 +22,7 @@ copy and paste:
 
     mkdir -p ~/.vim/bundle
     cd ~/.vim/bundle
-    git clone git://github.com/godlygeek/tabular.git
+    git clone https://github.com/godlygeek/tabular.git
 
 Once help tags have been generated (either using Pathogen's `:Helptags`
 command, or by pointing vim's `:helptags` command at the directory where you
