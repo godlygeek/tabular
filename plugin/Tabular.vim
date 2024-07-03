@@ -318,6 +318,10 @@ function! Tabularize(command, ...) range
   endtry
 endfunction
 
+function! TabularizeHasPattern()
+  return exists("s:last_tabularize_command")
+endfunction
+
 " GTabularize /pattern[/format]                                           {{{2
 " GTabularize name
 "
