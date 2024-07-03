@@ -89,11 +89,19 @@ fields, you would provide a different format to the Tabularize command:
 
             Some short phrase,      some other phrase
     A much longer phrase here,and another long phrase
-<
-A format specifier is either l, r, or c, followed by one or more digits.  If
-the letter is l, the field will be left aligned, similarly for r and right
-aligning and c and center aligning.  The number following the letter is the
-number of spaces padding to insert before the start of the next field.
+
+A format specifier is composed of an alignment specifier followed by a padding
+specifier. The alignment specifier is either l, r, or c. If the letter is l,
+the field will be left aligned, similarly for r and right aligning and c and
+center aligning. The padding specification is a repeated sequence composed of
+one or more digits followed by a whitespace specifier of s or t, terminated by
+optional space characters. Either digit sequence or whitespace specifier is
+optional, but not both. Omitted, the whitespace specifier defaults to
+|g:tabular_default_padding|. Conversely, the digit sequence defaults to one. A
+whitespace specifier of s represents space, similarly for t and tab. Each
+represented character is repeated as per the digit sequence.  Tabs respect the
+|shiftwidth| and |expandtab| settings.
+
 Multiple format specifiers can be added to the same command - each field will
 be printed with the next format specifier in the list; when they all have been
 used the first will be used again, and so on.  So, the last command right
@@ -115,20 +123,41 @@ left, or center aligned.  Also notice that the 0 padding spaces specified for
 the 3rd field are unused - but they would be used if there were enough fields
 to require looping through the fields again.  For instance:
 >
-    abc,def,ghi
-    a,b
+        +.......+.......+.......+.......+.......+
+    abc,def,ghi,jkl,mno
     a,b,c
+    a,b,c,d,e
 
-  :Tabularize /,/r1c1l0
+        abc,defghi,jkl
+        abcdefghijkl,m
+        a,b,c
+        +.......+.......+.......+.......+.......+
 
-    abc , def, ghi
-      a , b
-      a , b  ,  c
-<
-Notice that now, the format pattern has been reused; field 4 (the second comma)
-is right aligned, field 5 is center aligned.  No spaces were inserted between
-the 3rd field (containing "def") and the 4th field (the second comma) because
-the format specified 'l0'.
+  :echo [&tabstop, &expandtab]
+  [8, 1]
+  :exec "Tabularize /,/r1 ct l0 ct" | exec "norm }j" | Tabularize
+
+        +.......+.......+.......+.......+.......+
+    abc ,       def,    ghi ,   jkl,    mno
+      a ,       b  ,      c
+      a ,       b  ,      c ,   d  ,      e
+
+                 abc ,  defghi, jkl
+        abcdefghijkl ,  m
+                   a ,  b     ,   c
+        +.......+.......+.......+.......+.......+
+
+Notice that now, the format pattern has been reused: field 5 (containing
+"ghi") is right aligned, field 6 (the third comma) is center aligned, and
+field 7 (containing "jkl") is left aligned. A tab is inserted between the 4th
+field (the second comma) and the 5th field (containing "ghi") because the
+format specifier "ct".
+
+The "+" characters in the visual guide represent the tabstop locations. Notice
+how, irrespective of indent the correct number of spaces are automatically
+inserted, so the "ghi" and "defghi" fields are correctly aligned, as well as
+both "jkl" entries. Though not demonstrated here, Tabularize correctly handles
+any tabs within the original expression.
 
 But, what if you only wanted to act on the first comma on the line, rather than
 all of the commas on the line?  Let's say we want everything before the first
